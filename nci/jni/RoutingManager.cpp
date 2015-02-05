@@ -123,23 +123,23 @@ bool RoutingManager::initialize (nfc_jni_native_data* native)
                 mEeInfo.ee_disc_info[i].lb_protocol,
                 mEeInfo.ee_disc_info[i].lf_protocol,
                 mEeInfo.ee_disc_info[i].lbp_protocol);
-             if (mEeInfo.ee_disc_info[i].ee_handle == (mActiveSe | NFA_HANDLE_GROUP_EE))
-             {
-                 if (mEeInfo.ee_disc_info[i].la_protocol != 0) mSeTechMask |= NFA_TECHNOLOGY_MASK_A;
-
-                 if (mSeTechMask != 0x00)
-                 {
-                     ALOGD("Configuring tech mask 0x%02x on EE 0x%04x", mSeTechMask, mEeInfo.ee_disc_info[i].ee_handle);
-                     nfaStat = NFA_CeConfigureUiccListenTech(mEeInfo.ee_disc_info[i].ee_handle, mSeTechMask);
-                     if (nfaStat != NFA_STATUS_OK)
-                         ALOGE ("Failed to configure UICC listen technologies.");
-                     // Set technology routes to UICC if it's there
-                     nfaStat = NFA_EeSetDefaultTechRouting(mEeInfo.ee_disc_info[i].ee_handle, mSeTechMask, mSeTechMask,
-                             mSeTechMask);
-                     if (nfaStat != NFA_STATUS_OK)
-                         ALOGE ("Failed to configure UICC technology routing.");
-                 }
-             }
+//             if (mEeInfo.ee_disc_info[i].ee_handle == (mActiveSe | NFA_HANDLE_GROUP_EE))
+//             {
+//                 if (mEeInfo.ee_disc_info[i].la_protocol != 0) mSeTechMask |= NFA_TECHNOLOGY_MASK_A;
+//
+//                 if (mSeTechMask != 0x00)
+//                 {
+//                     ALOGD("Configuring tech mask 0x%02x on EE 0x%04x", mSeTechMask, mEeInfo.ee_disc_info[i].ee_handle);
+//                     nfaStat = NFA_CeConfigureUiccListenTech(mEeInfo.ee_disc_info[i].ee_handle, mSeTechMask);
+//                     if (nfaStat != NFA_STATUS_OK)
+//                         ALOGE ("Failed to configure UICC listen technologies.");
+//                     // Set technology routes to UICC if it's there
+//                     nfaStat = NFA_EeSetDefaultTechRouting(mEeInfo.ee_disc_info[i].ee_handle, mSeTechMask, mSeTechMask,
+//                             mSeTechMask);
+//                     if (nfaStat != NFA_STATUS_OK)
+//                         ALOGE ("Failed to configure UICC technology routing.");
+//                 }
+//             }
         }
     }
 

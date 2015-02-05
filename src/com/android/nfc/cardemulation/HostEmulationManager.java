@@ -31,11 +31,11 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
-import android.os.UserHandle;
 import android.util.Log;
 
-import com.android.nfc.NfcService;
+import com.android.nfc_watch.NfcService;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
+import com.android.nfc_watch.cardemulation.*;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
@@ -108,7 +108,7 @@ public class HostEmulationManager {
     public void onPreferredPaymentServiceChanged(ComponentName service) {
         synchronized (mLock) {
             if (service != null) {
-                bindPaymentServiceLocked(ActivityManager.getCurrentUser(), service);
+                bindPaymentServiceLocked(0, service);
             } else {
                 unbindPaymentServiceLocked();
             }
@@ -131,8 +131,8 @@ public class HostEmulationManager {
             // Regardless of what happens, if we're having a tap again
             // activity up, close it
             Intent intent = new Intent(TapAgainDialog.ACTION_CLOSE);
-            intent.setPackage("com.android.nfc");
-            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+            intent.setPackage("com.android.nfc_watch");
+            mContext.sendBroadcast(intent);
             if (mState != STATE_IDLE) {
                 Log.e(TAG, "Got activation event in non-idle state");
             }
@@ -141,7 +141,7 @@ public class HostEmulationManager {
     }
 
     public void onHostEmulationData(byte[] data) {
-        Log.d(TAG, "notifyHostEmulationData");
+        Log.d(TAG, "notifyHostEmulationData: " + bytesToString(data, 0, data.length));
         String selectAid = findSelectAid(data);
         ComponentName resolvedService = null;
         synchronized (mLock) {
@@ -277,8 +277,8 @@ public class HostEmulationManager {
 
             //close the TapAgainDialog
             Intent intent = new Intent(TapAgainDialog.ACTION_CLOSE);
-            intent.setPackage("com.android.nfc");
-            mContext.sendBroadcastAsUser(intent, UserHandle.ALL);
+            intent.setPackage("com.android.nfc_watch");
+            mContext.sendBroadcast(intent);
         }
     }
 
@@ -294,8 +294,8 @@ public class HostEmulationManager {
             unbindServiceIfNeededLocked();
             Intent aidIntent = new Intent(HostApduService.SERVICE_INTERFACE);
             aidIntent.setComponent(service);
-            if (mContext.bindServiceAsUser(aidIntent, mConnection,
-                    Context.BIND_AUTO_CREATE, UserHandle.CURRENT)) {
+            if (mContext.bindService(aidIntent, mConnection,
+                    Context.BIND_AUTO_CREATE)) {
             } else {
                 Log.e(TAG, "Could not bind service.");
             }
@@ -350,8 +350,8 @@ public class HostEmulationManager {
 
         Intent intent = new Intent(HostApduService.SERVICE_INTERFACE);
         intent.setComponent(service);
-        if (!mContext.bindServiceAsUser(intent, mPaymentConnection,
-                Context.BIND_AUTO_CREATE, new UserHandle(userId))) {
+        if (!mContext.bindService(intent, mPaymentConnection,
+                Context.BIND_AUTO_CREATE)) {
             Log.e(TAG, "Could not bind (persistent) payment service.");
         }
     }
@@ -371,7 +371,7 @@ public class HostEmulationManager {
         dialogIntent.putExtra(TapAgainDialog.EXTRA_CATEGORY, category);
         dialogIntent.putExtra(TapAgainDialog.EXTRA_APDU_SERVICE, service);
         dialogIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        mContext.startActivityAsUser(dialogIntent, UserHandle.CURRENT);
+        mContext.startActivity(dialogIntent);
     }
 
     void launchResolver(ArrayList<ApduServiceInfo> services, ComponentName failedComponent,
@@ -383,7 +383,7 @@ public class HostEmulationManager {
         if (failedComponent != null) {
             intent.putExtra(AppChooserActivity.EXTRA_FAILED_COMPONENT, failedComponent);
         }
-        mContext.startActivityAsUser(intent, UserHandle.CURRENT);
+        mContext.startActivity(intent);
     }
 
     String findSelectAid(byte[] data) {

@@ -545,13 +545,9 @@ public class RegisteredAidCache {
     public void onServicesUpdated(int userId, List<ApduServiceInfo> services) {
         if (DBG) Log.d(TAG, "onServicesUpdated");
         synchronized (mLock) {
-            if (ActivityManager.getCurrentUser() == userId) {
-                // Rebuild our internal data-structures
-                generateServiceMapLocked(services);
-                generateAidCacheLocked();
-            } else {
-                if (DBG) Log.d(TAG, "Ignoring update because it's not for the current user.");
-            }
+            // Rebuild our internal data-structures
+            generateServiceMapLocked(services);
+            generateAidCacheLocked();
         }
     }
 

@@ -18,7 +18,7 @@ package com.android.nfc.cardemulation;
 import android.util.Log;
 import android.util.SparseArray;
 
-import com.android.nfc.NfcService;
+import com.android.nfc_watch.NfcService;
 
 import java.io.FileDescriptor;
 import java.io.PrintWriter;

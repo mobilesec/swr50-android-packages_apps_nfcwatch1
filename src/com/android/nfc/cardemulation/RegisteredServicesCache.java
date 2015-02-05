@@ -35,7 +35,6 @@ import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.nfc.cardemulation.HostApduService;
 import android.nfc.cardemulation.OffHostApduService;
-import android.os.UserHandle;
 import android.util.AtomicFile;
 import android.util.Log;
 import android.util.SparseArray;
@@ -57,6 +56,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import com.android.nfc_watch.NfcPermissions;
 
 /**
  * This class is inspired by android.content.pm.RegisteredServicesCache
@@ -128,12 +129,7 @@ public class RegisteredServicesCache {
                             (Intent.ACTION_PACKAGE_ADDED.equals(action) ||
                              Intent.ACTION_PACKAGE_REMOVED.equals(action));
                     if (!replaced) {
-                        int currentUser = ActivityManager.getCurrentUser();
-                        if (currentUser == UserHandle.getUserId(uid)) {
-                            invalidateCache(UserHandle.getUserId(uid));
-                        } else {
-                            // Cache will automatically be updated on user switch
-                        }
+                        invalidateCache(0);
                     } else {
                         if (DEBUG) Log.d(TAG, "Ignoring package intent due to package being replaced.");
                     }
@@ -150,13 +146,13 @@ public class RegisteredServicesCache {
         intentFilter.addAction(Intent.ACTION_PACKAGE_FIRST_LAUNCH);
         intentFilter.addAction(Intent.ACTION_PACKAGE_RESTARTED);
         intentFilter.addDataScheme("package");
-        mContext.registerReceiverAsUser(mReceiver.get(), UserHandle.ALL, intentFilter, null, null);
+        mContext.registerReceiver(mReceiver.get(), intentFilter);
 
         // Register for events related to sdcard operations
         IntentFilter sdFilter = new IntentFilter();
         sdFilter.addAction(Intent.ACTION_EXTERNAL_APPLICATIONS_AVAILABLE);
         sdFilter.addAction(Intent.ACTION_EXTERNAL_APPLICATIONS_UNAVAILABLE);
-        mContext.registerReceiverAsUser(mReceiver.get(), UserHandle.ALL, sdFilter, null, null);
+        mContext.registerReceiver(mReceiver.get(), sdFilter);
 
         File dataDir = mContext.getFilesDir();
         mDynamicAidsFile = new AtomicFile(new File(dataDir, "dynamic_aids.xml"));
@@ -166,7 +162,7 @@ public class RegisteredServicesCache {
         synchronized (mLock) {
             readDynamicAidsLocked();
         }
-        invalidateCache(ActivityManager.getCurrentUser());
+        invalidateCache(0);
     }
 
     void dump(ArrayList<ApduServiceInfo> services) {
@@ -214,24 +210,17 @@ public class RegisteredServicesCache {
     }
 
     ArrayList<ApduServiceInfo> getInstalledServices(int userId) {
-        PackageManager pm;
-        try {
-            pm = mContext.createPackageContextAsUser("android", 0,
-                    new UserHandle(userId)).getPackageManager();
-        } catch (NameNotFoundException e) {
-            Log.e(TAG, "Could not create user package context");
-            return null;
-        }
+        PackageManager pm = mContext.getPackageManager();
 
         ArrayList<ApduServiceInfo> validServices = new ArrayList<ApduServiceInfo>();
 
-        List<ResolveInfo> resolvedServices = pm.queryIntentServicesAsUser(
+        List<ResolveInfo> resolvedServices = pm.queryIntentServices(
                 new Intent(HostApduService.SERVICE_INTERFACE),
-                PackageManager.GET_META_DATA, userId);
+                PackageManager.GET_META_DATA);
 
-        List<ResolveInfo> resolvedOffHostServices = pm.queryIntentServicesAsUser(
+        List<ResolveInfo> resolvedOffHostServices = pm.queryIntentServices(
                 new Intent(OffHostApduService.SERVICE_INTERFACE),
-                PackageManager.GET_META_DATA, userId);
+                PackageManager.GET_META_DATA);
         resolvedServices.addAll(resolvedOffHostServices);
 
         for (ResolveInfo resolvedService : resolvedServices) {
@@ -240,18 +229,18 @@ public class RegisteredServicesCache {
                 ServiceInfo si = resolvedService.serviceInfo;
                 ComponentName componentName = new ComponentName(si.packageName, si.name);
                 // Check if the package holds the NFC permission
-                if (pm.checkPermission(android.Manifest.permission.NFC, si.packageName) !=
+                if (pm.checkPermission(NfcPermissions.NFC_PERMISSION, si.packageName) !=
                         PackageManager.PERMISSION_GRANTED) {
                     Log.e(TAG, "Skipping APDU service " + componentName +
                             ": it does not require the permission " +
-                            android.Manifest.permission.NFC);
+                            NfcPermissions.NFC_PERMISSION);
                     continue;
                 }
-                if (!android.Manifest.permission.BIND_NFC_SERVICE.equals(
+                if (!NfcPermissions.NFC_SERVICE_BIND_PERMISSION.equals(
                         si.permission)) {
                     Log.e(TAG, "Skipping APDU service " + componentName +
                             ": it does not require the permission " +
-                            android.Manifest.permission.BIND_NFC_SERVICE);
+                            NfcPermissions.NFC_SERVICE_BIND_PERMISSION);
                     continue;
                 }
                 ApduServiceInfo service = new ApduServiceInfo(pm, resolvedService, onHost);
@@ -377,7 +366,7 @@ public class RegisteredServicesCache {
                             // See if we have a valid service
                             if (currentComponent != null && currentUid >= 0 &&
                                     currentGroups.size() > 0) {
-                                final int userId = UserHandle.getUserId(currentUid);
+                                final int userId = 0;
                                 DynamicAids dynAids = new DynamicAids(currentUid);
                                 for (AidGroup group : currentGroups) {
                                     dynAids.aidGroups.put(group.getCategory(), group);

@@ -30,6 +30,8 @@
 #include <ScopedLocalRef.h>
 #include <ScopedUtfChars.h>
 #include <ScopedPrimitiveArray.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 extern "C"
 {
@@ -825,6 +827,17 @@ static jboolean nfcManager_doInitialize (JNIEnv* e, jobject o)
         __FUNCTION__, nfca_version_string, nfa_version_string, NCI_VERSION);
     tNFA_STATUS stat = NFA_STATUS_OK;
 
+    // modify access conditions for bcm2079x device file
+    pid_t supid = fork();
+    if (supid == 0) {
+        // forked child
+        execl("/system/xbin/su", "/system/xbin/su", "-c", "/system/bin/chown root.root /dev/bcm2079x; /system/bin/chmod 666 /dev/bcm2079x; /system/bin/chcon u:object_r:null_device:s0 /dev/bcm2079x")
+        exit(0);
+    } else if (supid > 0) {
+        // parent process
+        waitpid(supid, NULL, 0);
+    }
+
     PowerSwitch & powerSwitch = PowerSwitch::getInstance ();
 
     if (sIsNfaEnabled)
@@ -968,7 +981,8 @@ static void nfcManager_enableDiscovery (JNIEnv* e, jobject o, jint technologies_
         if (sPollingEnabled)
         {
             ALOGD ("%s: Enable p2pListening", __FUNCTION__);
-            PeerToPeer::getInstance().enableP2pListening (!reader_mode);
+            //PeerToPeer::getInstance().enableP2pListening (!reader_mode);
+            PeerToPeer::getInstance().enableP2pListening (false);
 
             if (reader_mode && !sReaderModeEnabled)
             {
@@ -981,8 +995,10 @@ static void nfcManager_enableDiscovery (JNIEnv* e, jobject o, jint technologies_
             {
                 struct nfc_jni_native_data *nat = getNative(e, o);
                 sReaderModeEnabled = false;
-                NFA_ResumeP2p();
-                NFA_EnableListening();
+                //NFA_ResumeP2p();
+                //NFA_EnableListening();
+                NFA_PauseP2p();
+                NFA_DisableListening();
                 NFA_SetRfDiscoveryDuration(nat->discovery_duration);
             }
         }

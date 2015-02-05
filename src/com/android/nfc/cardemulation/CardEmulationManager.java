@@ -28,12 +28,11 @@ import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Binder;
 import android.os.RemoteException;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
 
-import com.android.nfc.NfcPermissions;
-import com.android.nfc.cardemulation.RegisteredServicesCache;
+import com.android.nfc_watch.NfcPermissions;
+import com.android.nfc_watch.cardemulation.*;
 
 /**
  * CardEmulationManager is the central entity
@@ -160,7 +159,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                             CardEmulation.CATEGORY_PAYMENT);
                     Intent intent = new Intent(mContext, DefaultRemovedActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    mContext.startActivityAsUser(intent, UserHandle.CURRENT);
+                    mContext.startActivity(intent);
                 }
             } else {
                 // Default still exists and handles the category, nothing do
@@ -199,9 +198,8 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             return null;
         }
         // Load current payment default from settings
-        String name = Settings.Secure.getStringForUser(
-                mContext.getContentResolver(), Settings.Secure.NFC_PAYMENT_DEFAULT_COMPONENT,
-                userId);
+        String name = Settings.Secure.getString(
+                mContext.getContentResolver(), Settings.Secure.NFC_PAYMENT_DEFAULT_COMPONENT);
         if (name != null) {
             ComponentName service = ComponentName.unflattenFromString(name);
             if (!validateInstalled || service == null) {
@@ -224,9 +222,9 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         // ideally we overlay our local changes over whatever is in
         // Settings.Secure
         if (service == null || mServiceCache.hasService(userId, service)) {
-            Settings.Secure.putStringForUser(mContext.getContentResolver(),
+            Settings.Secure.putString(mContext.getContentResolver(),
                     Settings.Secure.NFC_PAYMENT_DEFAULT_COMPONENT,
-                    service != null ? service.flattenToString() : null, userId);
+                    service != null ? service.flattenToString() : null);
         } else {
             Log.e(TAG, "Could not find default service to make default: " + service);
         }
@@ -348,7 +346,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         public boolean setPreferredService(ComponentName service)
                 throws RemoteException {
             NfcPermissions.enforceUserPermissions(mContext);
-            if (!isServiceRegistered(UserHandle.getCallingUserId(), service)) {
+            if (!isServiceRegistered(0, service)) {
                 Log.e(TAG, "setPreferredService: unknown component.");
                 return false;
             }

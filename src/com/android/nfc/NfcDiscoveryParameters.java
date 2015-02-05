@@ -64,13 +64,13 @@ public final class NfcDiscoveryParameters {
     }
 
     // Polling technology masks
-    static final int NFC_POLL_DEFAULT = -1;
-    static final int NFC_POLL_A = 0x01;
-    static final int NFC_POLL_B = 0x02;
-    static final int NFC_POLL_F = 0x04;
-    static final int NFC_POLL_ISO15693 = 0x08;
-    static final int NFC_POLL_B_PRIME = 0x10;
-    static final int NFC_POLL_KOVIO = 0x20;
+    public static final int NFC_POLL_DEFAULT = -1;
+    public static final int NFC_POLL_A = 0x01;
+    public static final int NFC_POLL_B = 0x02;
+    public static final int NFC_POLL_F = 0x04;
+    public static final int NFC_POLL_ISO15693 = 0x08;
+    public static final int NFC_POLL_B_PRIME = 0x10;
+    public static final int NFC_POLL_KOVIO = 0x20;
 
     private int mTechMask = 0;
     private boolean mEnableLowPowerDiscovery = true;

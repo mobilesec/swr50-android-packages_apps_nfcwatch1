@@ -19,7 +19,7 @@ import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
-import com.android.nfc.ForegroundUtils;
+import com.android.nfc_watch.ForegroundUtils;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
@@ -30,7 +30,6 @@ import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.provider.Settings.SettingNotFoundException;
 import android.util.Log;
@@ -51,7 +50,7 @@ import android.util.Log;
  * to adapt as necessary (ie the AID cache can update its AID
  * mappings and the routing table).
  */
-public class PreferredServices implements com.android.nfc.ForegroundUtils.Callback {
+public class PreferredServices implements ForegroundUtils.Callback {
     static final String TAG = "PreferredCardEmulationServices";
     static final Uri paymentDefaultUri = Settings.Secure.getUriFor(
             Settings.Secure.NFC_PAYMENT_DEFAULT_COMPONENT);
@@ -98,14 +97,14 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
         mSettingsObserver = new SettingsObserver(mHandler);
         mContext.getContentResolver().registerContentObserver(
                 paymentDefaultUri,
-                true, mSettingsObserver, UserHandle.USER_ALL);
+                true, mSettingsObserver);
 
         mContext.getContentResolver().registerContentObserver(
                 paymentForegroundUri,
-                true, mSettingsObserver, UserHandle.USER_ALL);
+                true, mSettingsObserver);
 
         // Load current settings defaults for payments
-        loadDefaultsFromSettings(ActivityManager.getCurrentUser());
+        loadDefaultsFromSettings(0);
     }
 
     private final class SettingsObserver extends ContentObserver {
@@ -119,7 +118,7 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
             // Do it just for the current user. If it was in fact
             // a change made for another user, we'll sync it down
             // on user switch.
-            int currentUser = ActivityManager.getCurrentUser();
+            int currentUser = 0;
             loadDefaultsFromSettings(currentUser);
         }
     };
@@ -128,9 +127,8 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
         boolean paymentDefaultChanged = false;
         boolean paymentPreferForegroundChanged = false;
         // Load current payment default from settings
-        String name = Settings.Secure.getStringForUser(
-                mContext.getContentResolver(), Settings.Secure.NFC_PAYMENT_DEFAULT_COMPONENT,
-                userId);
+        String name = Settings.Secure.getString(
+                mContext.getContentResolver(), Settings.Secure.NFC_PAYMENT_DEFAULT_COMPONENT);
         ComponentName newDefault = name != null ? ComponentName.unflattenFromString(name) : null;
         boolean preferForeground = false;
         try {
@@ -226,7 +224,7 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
             // override as well (it could use this to make sure it handles AIDs of category OTHER)
             return true;
         }
-        ApduServiceInfo serviceInfo = mServiceCache.getService(ActivityManager.getCurrentUser(),
+        ApduServiceInfo serviceInfo = mServiceCache.getService(0,
                 service);
         // Do some sanity checking
         if (!mPaymentDefaults.preferForeground) {
@@ -244,7 +242,7 @@ public class PreferredServices implements com.android.nfc.ForegroundUtils.Callba
             // it's not allowed to be overridden).
             final ArrayList<String> otherAids = serviceInfo.getAids();
             ApduServiceInfo paymentServiceInfo = mServiceCache.getService(
-                    ActivityManager.getCurrentUser(), mPaymentDefaults.currentPreferred);
+                    0, mPaymentDefaults.currentPreferred);
             if (paymentServiceInfo != null && otherAids != null && otherAids.size() > 0) {
                 for (String aid : otherAids) {
                     RegisteredAidCache.AidResolveInfo resolveInfo = mAidCache.resolveAid(aid);

@@ -148,6 +148,11 @@ bool RoutingManager::initialize (nfc_jni_native_data* native)
     if (nfaStat != NFA_STATUS_OK)
         ALOGE ("Failed to configure CE IsoDep technologies");
 
+    UINT8 uid[] = { 0x23, 0x45, 0x67, 0x89 };
+    nfaStat = NFA_CeSetIsoDepListenNfcAParams(uid, 4, 0x0004, TRUE, 0x08, TRUE, (UINT8 *)NULL, 0);
+    if (nfaStat != NFA_STATUS_OK)
+        ALOGE ("Failed to configure CE NFC-A parameters");
+
     // Register a wild-card for AIDs routed to the host
     nfaStat = NFA_CeRegisterAidOnDH (NULL, 0, stackCallback);
     if (nfaStat != NFA_STATUS_OK)

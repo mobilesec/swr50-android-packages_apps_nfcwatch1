@@ -32,6 +32,7 @@
 #include <ScopedPrimitiveArray.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 extern "C"
 {
@@ -831,7 +832,7 @@ static jboolean nfcManager_doInitialize (JNIEnv* e, jobject o)
     pid_t supid = fork();
     if (supid == 0) {
         // forked child
-        execl("/system/xbin/su", "/system/xbin/su", "-c", "/system/bin/chown root.root /dev/bcm2079x; /system/bin/chmod 666 /dev/bcm2079x; /system/bin/chcon u:object_r:null_device:s0 /dev/bcm2079x")
+        execl("/system/xbin/su", "/system/xbin/su", "-c", "/system/bin/chown root.root /dev/bcm2079x; /system/bin/chmod 666 /dev/bcm2079x; /system/bin/chcon u:object_r:null_device:s0 /dev/bcm2079x", (char *)NULL);
         exit(0);
     } else if (supid > 0) {
         // parent process
